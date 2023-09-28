@@ -1,9 +1,6 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
-import Login from './Login.jsx'
-import { Route, Routes } from "react-router-dom";
+import { Link, Route, Routes } from "react-router-dom";
+import React from 'react'
 
 function App() {
 
@@ -14,13 +11,10 @@ function App() {
     await new Promise(resolve => setTimeout(resolve, 600));
     // Close the window
     loginWindow.close();
-    window.location.href = '/info';
+    window.location.href = '/data';
   }
   return (
     <>
-        {/* <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a> */}
         <Routes>
           <Route path='/' element={
             <>
@@ -28,7 +22,11 @@ function App() {
               <button className = "SpBtn" onClick={handleLoginClick}>Log in with Spotify</button>
             </>
           } />
-          <Route path='/info' element= {<Login/>} />
+          <Route path='/data' element={
+            <>
+              <h1>Hi</h1>
+            </>
+          }/>
         </Routes>
     </>
   )

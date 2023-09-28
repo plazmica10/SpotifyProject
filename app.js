@@ -2,6 +2,7 @@
 const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const session = require('express-session');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const app = express();
@@ -16,13 +17,16 @@ app.use(session({
   secret: process.env.SKRT,
   resave: false,
   saveUninitialized: true,
-}));
+}), 
+  cookieParser()
+);
 //instantiating spotify api object
 const spotifyApi = new SpotifyWebApi({
   clientId:  client_id,
   clientSecret: client_secret,
   redirectUri: redirect_uri,
 });
+
 //scopes for api, dont need all of them
 const scopes = [
   'ugc-image-upload',
@@ -45,15 +49,38 @@ const scopes = [
   'user-follow-read',
   'user-follow-modify'
 ];
-//redirect to spotify login page
+
 app.get('/', (req, res) => {
   res.redirect(spotifyApi.createAuthorizeURL(scopes));
+});
+
+app.get('/topartists',async (req, res) => {
+  const period = req.query.period || 'medium_term'
+  const data =await spotifyApi.getMyTopArtists({time_range:period});
+  let topArtists = data.body.items;
+  let artists = [];
+  for(let i=0;i<10;i++){
+    artists.push(topArtists[i].name,topArtists[i].external_urls.spotify);
+  }
+  console.log(artists);
+  res.send('Hi')
+});
+
+app.get('/toptracks',async (req, res) => {
+  const period = req.query.period || 'medium_term'
+  const data = await spotifyApi.getMyTopTracks({time_range:period});
+  let topTracks = data.body.items;
+  let tracks = [];
+  for(let i=0;i<10;i++){
+    tracks.push(topTracks[i].name, topTracks[i].artists[0].name, topTracks[i].duration_ms,topTracks[i].external_urls.spotify);
+  }
+  console.log(tracks);
+  res.send('Hi')
 });
 
 app.get('/callback', async (req, res) => {
   const error = req.query.error;
   const code = req.query.code;
-  const state = req.query.state;
 
   if (error) {
     console.error('Callback Error:', error);
@@ -63,7 +90,6 @@ app.get('/callback', async (req, res) => {
   if(req.session.access_token != null || req.session.access_token != undefined){
     return;
   }
-//async functions so we have to chain them with .then
   spotifyApi.authorizationCodeGrant(code)
     .then(data => {
       const access_token = data.body['access_token'];
@@ -75,31 +101,8 @@ app.get('/callback', async (req, res) => {
 
       req.session.access_token = access_token;
 
-      console.log(`Sucessfully retreived access token. Expires in ${expires_in} s.`);
+      console.log(`Sucessfully retreived access token ${access_token}. Expires in ${expires_in} s.`);
       res.send('Success! You can close this window now.');
-
-      return spotifyApi.getMyTopArtists();
-    })
-    .then(function(data){
-      let topArtists = data.body.items;
-      const pairs = [];
-      for(let i=0;i<10;i++){
-        pairs.push([topArtists[i].name,topArtists[i].external_urls.spotify]);
-      }
-      req.session.pairs = pairs;
-      // console.log(pairs);
-
-      return spotifyApi.getMyTopTracks();
-    })
-    .then(function(data){
-      let topTracks = data.body.items;
-      const tracks = [];
-      for(let i=0;i<10;i++){
-        tracks.push([topTracks[i].name],topTracks[i].artists[0].name,topTracks[i].duration_ms,topTracks[i].external_urls.spotify);
-      }
-      req.session.tracks = tracks;
-      console.log(tracks);
-      console.log(req.session.pairs)
     })
     .catch(error => {
       console.error('Error getting Tokens:', error);
