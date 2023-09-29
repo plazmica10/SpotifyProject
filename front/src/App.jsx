@@ -1,7 +1,7 @@
 import './App.css'
 import { Link, Route, Routes } from "react-router-dom";
 import React from 'react'
-
+import Data from './Data'
 function App() {
 
   const handleLoginClick = async () => {
@@ -23,9 +23,7 @@ function App() {
             </>
           } />
           <Route path='/data' element={
-            <>
-              <h1>Hi</h1>
-            </>
+            <Data/>
           }/>
         </Routes>
     </>

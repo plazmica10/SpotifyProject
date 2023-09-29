@@ -4,6 +4,7 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
+const cors = require('cors');
 
 const app = express();
 
@@ -18,7 +19,11 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
 }), 
-  cookieParser()
+  cookieParser(),
+  cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  })
 );
 //instantiating spotify api object
 const spotifyApi = new SpotifyWebApi({
@@ -49,21 +54,28 @@ const scopes = [
   'user-follow-read',
   'user-follow-modify'
 ];
-
+function formatDuration(durationMs) {
+  const totalSeconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
+  return `${minutes}:${formattedSeconds}`;
+}
 app.get('/', (req, res) => {
   res.redirect(spotifyApi.createAuthorizeURL(scopes));
 });
 
 app.get('/topartists',async (req, res) => {
   const period = req.query.period || 'medium_term'
-  const data =await spotifyApi.getMyTopArtists({time_range:period});
+  const cacheBuster = new Date().getTime(); // Add a cache-busting parameter
+  const data = await spotifyApi.getMyTopArtists({time_range:period});
   let topArtists = data.body.items;
   let artists = [];
   for(let i=0;i<10;i++){
-    artists.push(topArtists[i].name,topArtists[i].external_urls.spotify);
+    artists.push({name: topArtists[i].name,url:topArtists[i].external_urls.spotify});
   }
-  console.log(artists);
-  res.send('Hi')
+  // console.log(artists);
+  res.send(artists);
 });
 
 app.get('/toptracks',async (req, res) => {
@@ -72,10 +84,11 @@ app.get('/toptracks',async (req, res) => {
   let topTracks = data.body.items;
   let tracks = [];
   for(let i=0;i<10;i++){
-    tracks.push(topTracks[i].name, topTracks[i].artists[0].name, topTracks[i].duration_ms,topTracks[i].external_urls.spotify);
+    const duration = formatDuration(topTracks[i].duration_ms);
+    tracks.push({name: topTracks[i].name,artist: topTracks[i].artists[0].name,duration: duration,url:topTracks[i].external_urls.spotify});
   }
-  console.log(tracks);
-  res.send('Hi')
+  // console.log(tracks);
+  res.send(tracks)
 });
 
 app.get('/callback', async (req, res) => {
@@ -102,7 +115,7 @@ app.get('/callback', async (req, res) => {
       req.session.access_token = access_token;
 
       console.log(`Sucessfully retreived access token ${access_token}. Expires in ${expires_in} s.`);
-      res.send('Success! You can close this window now.');
+      res.send('Success! Redirecting...');
     })
     .catch(error => {
       console.error('Error getting Tokens:', error);
