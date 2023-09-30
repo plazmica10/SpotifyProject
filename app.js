@@ -2,7 +2,6 @@
 const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const session = require('express-session');
-const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const cors = require('cors');
 
@@ -18,10 +17,9 @@ app.use(session({
   secret: process.env.SKRT,
   resave: false,
   saveUninitialized: true,
-}), 
-  cookieParser(),
+}),
   cors({
-    origin: 'http://localhost:5173',
+    origin: 'http://localhost:5173',//allows for cross origin requests
     credentials: true,
   })
 );
@@ -54,6 +52,7 @@ const scopes = [
   'user-follow-read',
   'user-follow-modify'
 ];
+
 function formatDuration(durationMs) {
   const totalSeconds = Math.floor(durationMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
@@ -61,34 +60,50 @@ function formatDuration(durationMs) {
   const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
   return `${minutes}:${formattedSeconds}`;
 }
+
 app.get('/', (req, res) => {
   res.redirect(spotifyApi.createAuthorizeURL(scopes));
 });
 
-app.get('/topartists',async (req, res) => {
-  const period = req.query.period || 'medium_term'
-  const cacheBuster = new Date().getTime(); // Add a cache-busting parameter
-  const data = await spotifyApi.getMyTopArtists({time_range:period});
-  let topArtists = data.body.items;
-  let artists = [];
-  for(let i=0;i<10;i++){
-    artists.push({name: topArtists[i].name,url:topArtists[i].external_urls.spotify});
-  }
-  // console.log(artists);
-  res.send(artists);
-});
+app.get('/data',async (req, res) => {
+  const period = req.query.period || 'medium_term'//time period for api request
 
-app.get('/toptracks',async (req, res) => {
-  const period = req.query.period || 'medium_term'
-  const data = await spotifyApi.getMyTopTracks({time_range:period});
-  let topTracks = data.body.items;
+  const artistdata =  await spotifyApi.getMyTopArtists({time_range:period});
+  const trackdata = await spotifyApi.getMyTopTracks({time_range:period});
+
+  let topArtists = artistdata.body.items;
+  let topTracks = trackdata.body.items;
+  
   let tracks = [];
+  let artists = [];
+  let genres = [];
+
+  //Getting all genres from top artists
+  for(let i=0;i<topArtists.length;i++){
+    genres.push(...topArtists[i].genres)
+  }
+  // Get top 10 artists and tracks
   for(let i=0;i<10;i++){
     const duration = formatDuration(topTracks[i].duration_ms);
+
+    artists.push({name: topArtists[i].name,url:topArtists[i].external_urls.spotify});
     tracks.push({name: topTracks[i].name,artist: topTracks[i].artists[0].name,duration: duration,url:topTracks[i].external_urls.spotify});
   }
-  // console.log(tracks);
-  res.send(tracks)
+
+  // Count occurrences of each genre
+  const genreCounts = genres.reduce((counts, genre) => {
+    counts[genre] = (counts[genre] || 0) + 1;
+    return counts;
+  }, {});
+
+  // Convert genreCounts object to array of objects
+  const genreArray = Object.entries(genreCounts).map(([genre, count]) => ({ genre, count }));
+  // Sort genres by count in descending order
+  const sortedGenres = genreArray.sort((a, b) => b.count - a.count);
+  // Get top 10 genres
+  const topGenres = sortedGenres.slice(0, 10).map((genre) => genre.genre);
+
+  res.send({artists:artists,tracks:tracks,genres:topGenres});
 });
 
 app.get('/callback', async (req, res) => {
@@ -100,9 +115,11 @@ app.get('/callback', async (req, res) => {
     res.send(`Callback Error: ${error}`);
     return;
   }
+
   if(req.session.access_token != null || req.session.access_token != undefined){
     return;
   }
+
   spotifyApi.authorizationCodeGrant(code)
     .then(data => {
       const access_token = data.body['access_token'];
