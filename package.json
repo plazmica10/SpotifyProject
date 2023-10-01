@@ -6,5 +6,8 @@
     "express-session": "^1.17.3",
     "nodemon": "^3.0.1",
     "spotify-web-api-node": "^5.0.2"
+  },
+  "script":{
+    "start": "node app.js"
   }
 }

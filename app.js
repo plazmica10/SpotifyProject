@@ -10,7 +10,7 @@ const app = express();
 //spotify api credentials
 const client_id = process.env.ID;
 const client_secret = process.env.SECRET;
-const redirect_uri = 'http://localhost:3000/callback';
+const redirect_uri = process.env.REDIRECT;
 
 //middleware 
 app.use(session({
@@ -19,7 +19,7 @@ app.use(session({
   saveUninitialized: true,
 }),
   cors({
-    origin: 'http://localhost:5173',//allows for cross origin requests
+    origin: ['https://spotify-project-nine-opal.vercel.app/','http://localhost:5173'],//allows for cross origin requests
     credentials: true,
   })
 );
@@ -131,7 +131,7 @@ app.get('/callback', async (req, res) => {
 
       req.session.access_token = access_token;
 
-      console.log(`Sucessfully retreived access token ${access_token}. Expires in ${expires_in} s.`);
+      // console.log(`Sucessfully retreived access token ${access_token}. Expires in ${expires_in} s.`);
 
       // Set a timeout to refresh the access token before it expires
       setTimeout(() => {
@@ -156,6 +156,6 @@ app.get('/callback', async (req, res) => {
     });
 });
 
-app.listen(3000, () =>
+app.listen(process.env.PORT || 3000, () =>
   console.log('HTTP Server is up.')
 );

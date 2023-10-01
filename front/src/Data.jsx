@@ -88,14 +88,16 @@ export default function Data() {
             <div className='overlay'>
                 <div className='loader'></div>
             </div>) : null}
-
+            <div className="button-container">
             <button id="artists" onClick={handleButtonClick} className={selectedButton === 'artists' ? 'focused' : ''}>Top Artists</button>
             <button id="tracks" onClick={handleButtonClick} className={selectedButton === 'tracks' ? 'focused' : ''}>Top Tracks</button>
             <button id="genres" onClick={handleButtonClick} className={selectedButton === 'genres' ? 'focused' : ''}>Top Genres</button>
-            <br />
+            </div>
+            <div className='button-container'>
             <button id="lm" onClick={handlePeriodClick} className={selectedPeriod === 'lm' ? 'focused' : ''}>Last Month</button>
             <button id="6m" onClick={handlePeriodClick} className={selectedPeriod === '6m' ? 'focused' : ''}>Last 6 Months</button>
             <button id="at" onClick={handlePeriodClick} className={selectedPeriod === 'at' ? 'focused' : ''}>All Time</button>
+            </div>
             <br />
 
             {selectedButton === 'artists' && artists.map((artist, index) => (

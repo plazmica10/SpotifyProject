@@ -5,21 +5,14 @@ import Data from './Data'
 
 function App() {
   const handleLoginClick =  () => {
-    //not working
-    const parentWindow = window.parent;
-    // Close the parent window
-    if (parentWindow) {
-      parentWindow.close();
-    }
-    // Open the backend's /login route in a new tab
-    const loginWindow = window.open('http://localhost:3000', '_blank');
+    window.location = 'http://localhost:3000';
   }
   return (
     <>
         <Routes>
           <Route path='/' element={
             <>
-              <h1>Spotify Project</h1>
+              <h1>Dive into your music history</h1>
               <button className = "SpBtn" onClick={handleLoginClick}>Log in with Spotify</button>
             </>
           } />
